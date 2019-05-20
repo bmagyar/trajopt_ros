@@ -1,3 +1,4 @@
+
 /**
  * @file glass_up_right_plan.cpp
  * @brief Example using Trajopt for constrained free space planning
@@ -75,85 +76,6 @@ TrajOptProbPtr jsonMethod()
   return ConstructProblem(root, env_);
 }
 
-TrajOptProbPtr cppMethod()
-{
-  ProblemConstructionInfo pci(env_);
-
-  // Populate Basic Info
-  pci.basic_info.n_steps = steps_;
-  pci.basic_info.manip = "manipulator";
-  pci.basic_info.start_fixed = false;
-  pci.basic_info.use_time = false;
-
-  // Create Kinematic Object
-  pci.kin = pci.env->getManipulator(pci.basic_info.manip);
-
-  // Populate Init Info
-  Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
-  Eigen::VectorXd end_pos;
-  end_pos.resize(pci.kin->numJoints());
-  end_pos << 0.4, 0.2762, 0.0, -1.3348, 0.0, 1.4959, 0.0;
-
-  pci.init_info.type = InitInfo::GIVEN_TRAJ;
-  pci.init_info.data = TrajArray(steps_, pci.kin->numJoints());
-  for (unsigned idof = 0; idof < pci.kin->numJoints(); ++idof)
-  {
-    pci.init_info.data.col(idof) = Eigen::VectorXd::LinSpaced(steps_, start_pos[idof], end_pos[idof]);
-  }
-
-  // Populate Cost Info
-  std::shared_ptr<JointVelTermInfo> jv = std::shared_ptr<JointVelTermInfo>(new JointVelTermInfo);
-  jv->coeffs = std::vector<double>(7, 1.0);
-  jv->targets = std::vector<double>(7, 0.0);
-  jv->first_step = 0;
-  jv->last_step = pci.basic_info.n_steps - 1;
-  jv->name = "joint_vel";
-  jv->term_type = TT_COST;
-  pci.cost_infos.push_back(jv);
-
-  std::shared_ptr<CollisionTermInfo> collision = std::shared_ptr<CollisionTermInfo>(new CollisionTermInfo);
-  collision->name = "collision";
-  collision->term_type = TT_COST;
-  collision->continuous = false;
-  collision->first_step = 0;
-  collision->last_step = pci.basic_info.n_steps - 1;
-  collision->gap = 1;
-  collision->info = createSafetyMarginDataVector(pci.basic_info.n_steps, 0.025, 20);
-  for (auto& info : collision->info)
-  {
-    info->SetPairSafetyMarginData("base_link", "link_5", 0.05, 10);
-    info->SetPairSafetyMarginData("link_3", "link_5", 0.01, 10);
-    info->SetPairSafetyMarginData("link_3", "link_6", 0.01, 10);
-  }
-  pci.cost_infos.push_back(collision);
-
-  // Populate Constraints
-  double delta = 0.5 / pci.basic_info.n_steps;
-  for (auto i = 0; i < pci.basic_info.n_steps; ++i)
-  {
-    std::shared_ptr<CartPoseTermInfo> pose = std::shared_ptr<CartPoseTermInfo>(new CartPoseTermInfo);
-    pose->term_type = TT_CNT;
-    pose->name = "waypoint_cart_" + std::to_string(i);
-    pose->link = "tool0";
-    pose->timestep = i;
-    pose->xyz = Eigen::Vector3d(0.5, -0.2 + delta * i, 0.62);
-    pose->wxyz = Eigen::Vector4d(0.0, 0.0, 1.0, 0.0);
-    if (i == (pci.basic_info.n_steps - 1) || i == 0)
-    {
-      pose->pos_coeffs = Eigen::Vector3d(10, 10, 10);
-      pose->rot_coeffs = Eigen::Vector3d(10, 10, 10);
-    }
-    else
-    {
-      pose->pos_coeffs = Eigen::Vector3d(0, 0, 0);
-      pose->rot_coeffs = Eigen::Vector3d(10, 10, 0);
-    }
-    pci.cnt_infos.push_back(pose);
-  }
-
-  return ConstructProblem(pci);
-}
-
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "glass_up_right_plan");
@@ -220,13 +142,14 @@ int main(int argc, char** argv)
 
   // Set the robot initial state
   std::unordered_map<std::string, double> ipos;
-  ipos["joint_a1"] = -0.4;
-  ipos["joint_a2"] = 0.2762;
-  ipos["joint_a3"] = 0.0;
-  ipos["joint_a4"] = -1.3348;
-  ipos["joint_a5"] = 0.0;
-  ipos["joint_a6"] = 1.4959;
-  ipos["joint_a7"] = 0.0;
+  ipos["torso_lift_joint"] =  0.00038880942889491296;
+  ipos["arm_1_joint"] =  1.8412129654366185;
+  ipos["arm_2_joint"] = -0.4905036166476348;
+  ipos["arm_3_joint"] = -3.49;
+  ipos["arm_4_joint"] = -1.5598026200058066;
+  ipos["arm_5_joint"] = 1.5469586195777936;
+  ipos["arm_6_joint"] = 0.812078221806306;
+  ipos["arm_7_joint"] = -1.3109285867767095;
   env_->setState(ipos);
 
   plotter->plotScene();
@@ -235,11 +158,7 @@ int main(int argc, char** argv)
   util::gLogLevel = util::LevelInfo;
 
   // Setup Problem
-  TrajOptProbPtr prob;
-  if (method_ == "cpp")
-    prob = cppMethod();
-  else
-    prob = jsonMethod();
+  TrajOptProbPtr prob = jsonMethod();
 
   // Solve Trajectory
   ROS_INFO("glass upright plan example");

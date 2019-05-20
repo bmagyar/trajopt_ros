@@ -20,6 +20,16 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace
 {
+std::string toString(const std::vector<std::string>& strings)
+{
+  std::stringstream ss;
+  for(const auto& str : strings)
+  {
+    ss << "\"" << str << "\", ";
+  }
+  return ss.str();
+}
+  
 bool gRegisteredMakers = false;
 
 void ensure_only_members(const Json::Value& v, const char** fields, int nvalid)
@@ -244,7 +254,7 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     if (endpoint.size() != static_cast<unsigned>(n_dof))
     {
       PRINT_AND_THROW(boost::format("wrong number of dof values in "
-                                    "initialization. expected %i got %j") %
+                                    "initialization. expected %i got %i") %
                       n_dof % endpoint.size());
     }
     init_info.data = util::toVectorXd(endpoint);
@@ -277,6 +287,7 @@ void ProblemConstructionInfo::fromJson(const Json::Value& v)
     PRINT_AND_THROW(boost::format("Manipulator does not exist: %s") % basic_info.manip.c_str());
   }
   kin = env->getManipulator(basic_info.manip);
+  ROS_ERROR_STREAM("Joint names are: " << toString(kin->getJointNames()));
 
   if (v.isMember("costs"))
     readCosts(v["costs"]);
