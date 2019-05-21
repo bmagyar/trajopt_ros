@@ -49,6 +49,9 @@ target_link_libraries(${PROJECT_NAME}_pick_and_place_plan ${catkin_LIBRARIES})
 add_executable(tiago_box src/tiago_box.cpp)
 target_link_libraries(tiago_box ${catkin_LIBRARIES})
 
+add_executable(tiago_industrial src/tiago_industrial.cpp)
+target_link_libraries(tiago_industrial ${catkin_LIBRARIES})
+
 # Mark executables and/or libraries for installation
 install(
   TARGETS ${PROJECT_NAME}_basic_cartesian_plan ${PROJECT_NAME}_glass_up_right_plan ${PROJECT_NAME}_puzzle_piece_plan ${PROJECT_NAME}_car_seat_demo ${PROJECT_NAME}_puzzle_piece_auxillary_axes_plan ${PROJECT_NAME}_pick_and_place_plan
