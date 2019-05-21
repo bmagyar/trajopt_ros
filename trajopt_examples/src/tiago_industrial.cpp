@@ -148,7 +148,7 @@ int main(int argc, char** argv)
     Eigen::Isometry3d coll_object_pose;
 
     coll_object_pose.setIdentity();
-    coll_object_pose.translation() = Eigen::Vector3d((*pos_iter)[0], (*pos_iter)[1], (*pos_iter)[2]);
+    coll_object_pose.translation() = Eigen::Vector3d(pos_iter->at(0), pos_iter->at(1), pos_iter->at(2));
 
     obj->visual.shapes.push_back(collision_object);
     obj->visual.shape_poses.push_back(coll_object_pose);
