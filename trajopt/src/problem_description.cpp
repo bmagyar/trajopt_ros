@@ -253,11 +253,28 @@ void ProblemConstructionInfo::readInitInfo(const Json::Value& v)
     json_marshal::childFromJson(v, endpoint, "endpoint");
     if (endpoint.size() != static_cast<unsigned>(n_dof))
     {
-      PRINT_AND_THROW(boost::format("wrong number of dof values in "
+      PRINT_AND_THROW(boost::format("wrong number of dof values in end point"
                                     "initialization. expected %i got %i") %
                       n_dof % endpoint.size());
     }
     init_info.data = util::toVectorXd(endpoint);
+
+    if (v.isMember("startpoint"))
+    {
+      DblVec startpoint;
+      json_marshal::childFromJson(v, startpoint, "startpoint");
+      if (startpoint.size() != static_cast<unsigned>(n_dof))
+      {
+        PRINT_AND_THROW(boost::format("wrong number of dof values in start point"
+                                      "initialization. expected %i got %i") %
+                        n_dof % startpoint.size());
+      }
+      init_info.start_pos = boost::optional<TrajArray>(util::toVectorXd(startpoint));
+    }
+    else
+    {
+      init_info.start_pos = boost::none;
+    }
   }
   else
   {
@@ -312,13 +329,15 @@ void generateInitTraj(TrajArray& init_traj, const ProblemConstructionInfo& pci)
   // initialize based on type specified
   if (init_info.type == InitInfo::STATIONARY)
   {
-    Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
+    const Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
     init_traj = start_pos.transpose().replicate(pci.basic_info.n_steps, 1);
   }
   else if (init_info.type == InitInfo::JOINT_INTERPOLATED)
   {
-    Eigen::VectorXd start_pos = pci.env->getCurrentJointValues(pci.kin->getName());
-    Eigen::VectorXd end_pos = init_info.data;
+    const Eigen::VectorXd start_pos = 
+      init_info.start_pos ? Eigen::VectorXd(init_info.start_pos.value()) : pci.env->getCurrentJointValues(pci.kin->getName());
+    ROS_ERROR_STREAM_COND(init_info.start_pos, "Start positions set: " << start_pos);
+    const Eigen::VectorXd end_pos = init_info.data;
     init_traj.resize(pci.basic_info.n_steps, end_pos.rows());
     for (int idof = 0; idof < start_pos.rows(); ++idof)
     {

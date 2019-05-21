@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/optional.hpp>
 #include <tesseract_core/basic_env.h>
 #include <tesseract_core/basic_kin.h>
 #include <trajopt/common.hpp>
@@ -130,6 +131,9 @@ struct InitInfo
   };
   /** @brief Specifies the type of initialization to use */
   Type type;
+
+  boost::optional<TrajArray> start_pos;
+
   /** @brief Data used during initialization. Use depends on the initialization selected. */
   TrajArray data;
   /** @brief Default value the final column of the optimization is initialized too if time is being used */
