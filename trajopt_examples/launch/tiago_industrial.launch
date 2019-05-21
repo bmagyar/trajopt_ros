@@ -8,7 +8,7 @@
   <arg name="write_to_file" default="false"/>
 
   <!-- Load universal robot description format (URDF) -->
-  <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/tiago_box.json"/>
+  <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/tiago_industrial.json"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg robot_description)" command="$(find xacro)/xacro --inorder '$(find tiago_description)/robots/tiago_steel.urdf.xacro'" />
