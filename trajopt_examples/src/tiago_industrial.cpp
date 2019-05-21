@@ -143,8 +143,7 @@ int main(int argc, char** argv)
 
   auto dim_iter = dims.begin();
   auto pos_iter = positions.begin();
-  size_t idx = 0;
-  for (; dim_iter != dims.end(); ++dim_iter, ++pos_iter, ++idx) {
+  for (; dim_iter != dims.end(); ++dim_iter, ++pos_iter) {
     std::shared_ptr<shapes::Shape> collision_object(new shapes::Box(dim_iter->at(0), dim_iter->at(1), dim_iter->at(2)));
     Eigen::Isometry3d coll_object_pose;
 
