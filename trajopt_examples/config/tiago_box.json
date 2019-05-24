@@ -3,7 +3,7 @@
   {
     "n_steps" : 20,
     "manip" : "arm_torso",
-    "start_fixed" : false
+    "start_fixed" : true
   },
   "costs" :
   [
@@ -40,11 +40,41 @@
       }
     }
   ],
+  "constraints" :
+  [
+    {
+      "name" : "waypoint_cart_start",
+      "type" : "cart_pose",
+      "params" :
+      {
+        "timestep" : 0,
+        "xyz" : [0.710, 0.067, 0.727],
+        "wxyz" : [-0.281, 0.954, 0.034, 0.104],
+        "link" : "arm_tool_link",
+        "pos_coeffs" : [10, 10, 10],
+        "rot_coeffs" : [10, 10, 0]
+      }
+    },
+    {
+      "name" : "waypoint_cart_end",
+      "type" : "cart_pose",
+      "params" :
+      {
+        "timestep" : 4,
+        "xyz" : [0.700, -0.445, 0.665],
+        "wxyz" : [0.329, 0.867, -0.340, -0.158],
+        "link" : "arm_tool_link",
+        "pos_coeffs" : [10, 10, 10],
+        "rot_coeffs" : [10, 10, 0]
+      }
+    }
+  ],
   "init_info" :
   {
     // [torso_lift_joint, arm_1_joint, arm_2_joint, arm_3_joint, arm_4_joint, arm_5_joint, arm_6_joint, arm_7_joint]
-    "type" : "joint_interpolated",
-    "startpoint" : [0.00, 1.84, -0.49, -3.49, 1.56, 1.54, 0.81, -1.31],
+    // original arm_1 value: 1.84
+    "type" : "joint_interpolated", 
+    "startpoint" : [0.00, 2.1, -0.49, -3.49, 1.56, 1.54, 0.81, -1.31],
     "endpoint" : [0.35, 0.92, -0.61, -0.58, -0.25, 1.15, 0.28, 0.70]
   }
 }
