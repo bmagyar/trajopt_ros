@@ -280,7 +280,9 @@ OptStatus BasicTrustRegionSQP::optimize()
   if (!prob_)
     PRINT_AND_THROW("you forgot to set the optimization problem");
 
+  LOG_WARN("hola");
   results_.x = prob_->getClosestFeasiblePoint(results_.x);
+  LOG_WARN("hola2");
 
   assert(results_.x.size() == prob_->getVars().size());
   assert(prob_->getCosts().size() > 0 || constraints.size() > 0);

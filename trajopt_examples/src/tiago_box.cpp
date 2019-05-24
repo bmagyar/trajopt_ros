@@ -94,7 +94,7 @@ int main(int argc, char** argv)
   assert(urdf_model_ != nullptr);
   assert(env_ != nullptr);
 
-  bool success = env_->init(urdf_model_, srdf_model_);
+  const bool success = env_->init(urdf_model_, srdf_model_);
   assert(success);
 
   // Create Plotting tool
@@ -140,17 +140,17 @@ int main(int argc, char** argv)
   pnh.param<std::string>("method", method_, method_);
   pnh.param<int>("steps", steps_, steps_);
 
-  // Set the robot initial state
-  std::unordered_map<std::string, double> ipos;
-  ipos["torso_lift_joint"] =  0.00038880942889491296;
-  ipos["arm_1_joint"] =  1.8412129654366185;
-  ipos["arm_2_joint"] = -0.4905036166476348;
-  ipos["arm_3_joint"] = -3.49;
-  ipos["arm_4_joint"] = -1.5598026200058066;
-  ipos["arm_5_joint"] = 1.5469586195777936;
-  ipos["arm_6_joint"] = 0.812078221806306;
-  ipos["arm_7_joint"] = -1.3109285867767095;
-  env_->setState(ipos);
+  // // Set the robot initial state
+  // std::unordered_map<std::string, double> ipos;
+  // ipos["torso_lift_joint"] =  0.00038880942889491296;
+  // ipos["arm_1_joint"] =  1.8412129654366185;
+  // ipos["arm_2_joint"] = -0.4905036166476348;
+  // ipos["arm_3_joint"] = -3.49;
+  // ipos["arm_4_joint"] = 1.5598026200058066;
+  // ipos["arm_5_joint"] = 1.5469586195777936;
+  // ipos["arm_6_joint"] = 0.812078221806306;
+  // ipos["arm_7_joint"] = -1.3109285867767095;
+  // env_->setState(ipos);
 
   plotter->plotScene();
 
@@ -204,6 +204,7 @@ int main(int argc, char** argv)
     }
   }
   ROS_ERROR("trajectory norm: %.3f", d);
+  ROS_WARN_STREAM("Final trajectory: " << std::endl << traj);
 
   if (plotting_)
   {

@@ -20,12 +20,13 @@ TRAJOPT_IGNORE_WARNINGS_POP
 
 namespace
 {
-std::string toString(const std::vector<std::string>& strings)
+template <typename T>
+std::string toString(const std::vector<T>& stuffs)
 {
   std::stringstream ss;
-  for(const auto& str : strings)
+  for(const auto& stuff : stuffs)
   {
-    ss << "\"" << str << "\", ";
+    ss << stuff << ", ";
   }
   return ss.str();
 }
@@ -547,6 +548,8 @@ TrajOptProb::TrajOptProb(int n_steps, const ProblemConstructionInfo& pci)
       names.push_back((boost::format("dt_%i") % i).str());
     }
   }
+  ROS_ERROR_STREAM("hello hello SETTING BOUNDS HERE kinematics jointname list " << toString(m_kin->getJointNames()));
+  // ROS_ERROR_STREAM("hello hello SETTING BOUNDS HERE environment jointname list " << toString(m_env->getJointNames()));
   sco::VarVector trajvarvec = createVariables(names, vlower, vupper);
   m_traj_vars = VarArray(n_steps, n_dof + (pci.basic_info.use_time ? 1 : 0), trajvarvec.data());
 }
@@ -951,6 +954,7 @@ void JointVelTermInfo::hatch(TrajOptProb& prob)
       // If the tolerances are 0, an equality cost is set
       if (is_upper_zeros && is_lower_zeros)
       {
+        ROS_ERROR_STREAM("Zero velocity tolerances");
         DblVec single_jnt_coeffs = DblVec(num_vels * 2, coeffs[j]);
         prob.addCost(sco::CostPtr(new TrajOptCostFromErrFunc(
             sco::VectorOfVectorPtr(new JointVelErrCalculator(targets[j], upper_tols[j], lower_tols[j])),

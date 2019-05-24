@@ -12,6 +12,30 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/logging.hpp>
 #include <trajopt_utils/macros.h>
 
+namespace
+{
+std::string toString(const std::vector<double>& stuffs)
+{
+  std::stringstream ss;
+  for(const auto& stuff : stuffs)
+  {
+    ss << stuff << ", ";
+  }
+  return ss.str();
+}
+
+std::string toString(const std::vector<sco::Var>& stuffs)
+{
+  std::stringstream ss;
+  for(const auto& stuff : stuffs)
+  {
+    ss << stuff.var_rep->name << ", ";
+  }
+  return ss.str();
+}
+
+}
+
 namespace sco
 {
 void ConvexObjective::addAffExpr(const AffExpr& affexpr) { exprInc(quad_, affexpr); }
@@ -251,7 +275,15 @@ DblVec OptProb::getClosestFeasiblePoint(const DblVec& x)
   {
     exprInc(obj, exprSquare(exprSub(AffExpr(vars_[i]), x[i])));
   }
+  
+  std::cout <<  toString(vars_) << std::endl;
+  std::cout << "lower bounds(" << lower_bounds_.size() << "): " << toString(lower_bounds_) << std::endl;
+  std::cout << "upper bounds(" << upper_bounds_.size() << "): " <<  toString(upper_bounds_) << std::endl;
+
   model_->setVarBounds(vars_, lower_bounds_, upper_bounds_);
+
+
+
   model_->setObjective(obj);
   CvxOptStatus status = model_->optimize();
   if (status != CVX_SOLVED)
