@@ -4,8 +4,6 @@
   <!-- The name of the parameter under which the URDF is loaded -->
   <arg name="robot_description" default="robot_description"/>
   <arg name="trajopt_description" default="trajopt_description"/>
-  <arg name="plotting" default="true"/>
-  <arg name="write_to_file" default="false"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="$(arg trajopt_description)" textfile="$(find trajopt_examples)/config/tiago_box.json"/>
@@ -30,8 +28,6 @@
   <node pkg="tf" type="static_transform_publisher" name="virtual_joint_broadcaster_0" args="0 0 0 0 0 0 world base_link 100" />
 
   <node pkg="trajopt_examples" type="tiago_box" name="trajopt_tiago_box" output="screen" >
-    <param name="plotting" type="bool" value="$(arg plotting)"/>
-    <param name="write_to_file" type="bool" value="$(arg write_to_file)"/>
   </node>
 
 </launch>

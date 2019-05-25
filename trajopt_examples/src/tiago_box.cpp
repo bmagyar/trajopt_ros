@@ -10,6 +10,7 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract_ros/kdl/kdl_chain_kin.h>
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
+#include <trajopt_examples/rosconsole_extras.h>
 #include <trajopt/plot_callback.hpp>
 #include <trajopt/file_write_callback.hpp>
 #include <trajopt/problem_description.hpp>
@@ -19,15 +20,12 @@ TRAJOPT_IGNORE_WARNINGS_POP
 using namespace trajopt;
 using namespace tesseract;
 
-const std::string ROBOT_DESCRIPTION_PARAM = "robot_description"; /**< Default ROS parameter for robot description */
-const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic"; /**< Default ROS parameter for robot
-                                                                          description */
-const std::string TRAJOPT_DESCRIPTION_PARAM =
-    "trajopt_description"; /**< Default ROS parameter for trajopt description */
+const std::string ROBOT_DESCRIPTION_PARAM = "robot_description";
+const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic";
+const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description";
 
 static bool plotting_ = false;
 static int steps_ = 5;
-static std::string method_ = "json";
 static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
 static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
@@ -137,21 +135,7 @@ int main(int argc, char *argv[])
     }
 
     // Get ROS Parameters
-    pnh.param("plotting", plotting_, plotting_);
-    pnh.param<std::string>("method", method_, method_);
     pnh.param<int>("steps", steps_, steps_);
-
-    // // Set the robot initial state
-    // std::unordered_map<std::string, double> ipos;
-    // ipos["torso_lift_joint"] =  0.00038880942889491296;
-    // ipos["arm_1_joint"] =  1.8412129654366185;
-    // ipos["arm_2_joint"] = -0.4905036166476348;
-    // ipos["arm_3_joint"] = -3.49;
-    // ipos["arm_4_joint"] = 1.5598026200058066;
-    // ipos["arm_5_joint"] = 1.5469586195777936;
-    // ipos["arm_6_joint"] = 0.812078221806306;
-    // ipos["arm_7_joint"] = -1.3109285867767095;
-    // env_->setState(ipos);
 
     plotter->plotScene();
 
@@ -174,7 +158,7 @@ int main(int argc, char *argv[])
 
     ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-    size_t num_exp = 3;
+    const size_t num_exp = 3;
     for (size_t i = 0; i < num_exp; ++i)
     {
         sco::BasicTrustRegionSQP opt(prob);
@@ -186,11 +170,9 @@ int main(int argc, char *argv[])
         opt.initialize(trajToDblVec(prob->GetInitTraj()));
         ros::Time tStart = ros::Time::now();
         opt.optimize();
-        double duration = (ros::Time::now() - tStart).toSec();
-        ROS_ERROR("planning time: %.3f", duration);
 
         double d = 0;
-        TrajArray traj = getTraj(opt.x(), prob->GetVars());
+        const TrajArray traj = getTraj(opt.x(), prob->GetVars());
         for (unsigned i = 1; i < traj.rows(); ++i)
         {
             for (unsigned j = 0; j < traj.cols(); ++j)
@@ -210,6 +192,18 @@ int main(int argc, char *argv[])
                                                               prob->GetInitTraj(), collisions);
 
         ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+
+        double duration = (ros::Time::now() - tStart).toSec();
+        ROS_ERROR("planning time: %.3f", duration);
+
+        // const std::vector<double> &joint_values = traj[0];
+        // const auto &joint_names = env_->getJointNames();
+        // ROS_ERROR_STREAM("Joint names: " << joint_names);
+        // ROS_ERROR_STREAM("First state joint states " << joint_values);
+        // env_->setState(joint_names, joint_values);
+        // const Eigen::Isometry3d &tool_position = env_->getLinkTransform("arm_tool_link");
+        // ROS_ERROR_STREAM("Start state FK is " << tool_position.translation());
+
         PrintResult(duration, 666, !found, out_file);
     }
 
