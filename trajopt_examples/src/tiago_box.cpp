@@ -52,6 +52,7 @@ std::vector<Eigen::Isometry3d> jointToCartesianTrajectory(const tesseract_ros::K
     ROS_GREEN_STREAM("Start state FK is " << result[0].translation());
     ROS_BLUE_STREAM("Goal state joint states " << trajToDblVec(joint_traj.rows() - 1, joint_traj));
     ROS_BLUE_STREAM("Goal state FK is " << result[result.size() - 1].translation());
+    return result;
 }
 
 TrajOptProbPtr jsonMethod()
@@ -86,31 +87,36 @@ void PrintResult(double planning_time, double smoothness, bool success, std::ofs
     out << planning_time << ", 0, 0," << smoothness << ", 0," << success << ", " << std::put_time(&tm, fmt) << "\n";
 }
 
-double CalculateSmoothness(const std::vector<Eigen::Isometry3d> &cartesian_traj) {
-  double smoothness = 0.0;
-  Eigen::Isometry3d first_pose = cartesian_traj[0];
+Eigen::Vector3d vAbs(const Eigen::Vector3d &v)
+{
+    return { std::abs(v.x()), std::abs(v.y()), std::abs(v.z()) };
+}
 
-  std::vector<double> pos_smoothness;
+double calculateSmoothness(const std::vector<Eigen::Isometry3d> &cartesian_traj)
+{
+    Eigen::Isometry3d first_pose = cartesian_traj[0];
 
-  for(size_t i = 0; i < cartesian_traj.size() - 2; ++i) {
-    Eigen::Isometry3d pose0 = cartesian_traj[i];
-    Eigen::Isometry3d pose1 = cartesian_traj[i+1];
-    Eigen::Isometry3d pose2 = cartesian_traj[i+2];
+    std::vector<double> pos_smoothness;
 
-    Eigen::Vector3d f0 = (first_pose.translation() - pose0.translation());
-    f0.array() = f0.array().abs();
-    Eigen::Vector3d f1 = (first_pose.translation() - pose1.translation());
-    f1.array() = f1.array().abs();
-    Eigen::Vector3d f2 = (first_pose.translation() - pose2.translation());
-    f2.array() = f2.array().abs();
-    Eigen::Vector3d res = (f2 + f1 - 2.0 * f0);
-    res.array() = res.array().abs();
-    pos_smoothness.push_back(res.x());
-    pos_smoothness.push_back(res.y());
-    pos_smoothness.push_back(res.z());
-  }
-  smoothness = std::accumulate(pos_smoothness.begin(), pos_smoothness.end(), 0.0)/pos_smoothness.size();
-  return smoothness;
+    for (size_t i = 0; i < cartesian_traj.size() - 2; ++i)
+    {
+        const Eigen::Isometry3d &pose0 = cartesian_traj[i];
+        const Eigen::Isometry3d &pose1 = cartesian_traj[i + 1];
+        const Eigen::Isometry3d &pose2 = cartesian_traj[i + 2];
+
+        const Eigen::Vector3d f0 = vAbs(first_pose.translation() - pose0.translation());
+        const Eigen::Vector3d f1 = vAbs(first_pose.translation() - pose1.translation());
+        const Eigen::Vector3d f2 = vAbs(first_pose.translation() - pose2.translation());
+        // f2.array() = f2.array().abs();
+        const Eigen::Vector3d res = (f2 + f1 - 2.0 * f0);
+        pos_smoothness.push_back(std::abs(res.x()));
+        pos_smoothness.push_back(std::abs(res.y()));
+        pos_smoothness.push_back(std::abs(res.z()));
+    }
+
+    const double smoothness =
+        std::accumulate(pos_smoothness.begin(), pos_smoothness.end(), 0.0) / pos_smoothness.size();
+    return smoothness;
 }
 
 int main(int argc, char *argv[])
@@ -248,8 +254,9 @@ int main(int argc, char *argv[])
         ROS_ERROR("planning time: %.3f", duration);
 
         const auto cartesian_trajectory = jointToCartesianTrajectory(env_, traj);
+        const double cartesian_smoothness = calculateSmoothness(cartesian_trajectory);
 
-        PrintResult(duration, 666, !found, out_file);
+        PrintResult(duration, cartesian_smoothness, !found, out_file);
     }
 
     out_file.close();
