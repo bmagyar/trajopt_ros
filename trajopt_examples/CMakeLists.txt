@@ -18,7 +18,7 @@ find_package(PCL REQUIRED COMPONENTS core features filters io segmentation surfa
 catkin_package()
 
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
   SYSTEM ${PCL_INCLUDE_DIRS}
 )
