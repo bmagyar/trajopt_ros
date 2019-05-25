@@ -1,29 +1,4 @@
 
-/**
- * @file glass_up_right_plan.cpp
- * @brief Example using Trajopt for constrained free space planning
- *
- * @author Levi Armstrong
- * @date Dec 18, 2017
- * @version TODO
- * @bug No known bugs
- *
- * @copyright Copyright (c) 2017, Southwest Research Institute
- *
- * @par License
- * Software License Agreement (Apache License)
- * @par
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- * @par
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #include <trajopt_utils/macros.h>
 TRAJOPT_IGNORE_WARNINGS_PUSH
 #include <jsoncpp/json/json.h>
@@ -51,7 +26,6 @@ const std::string TRAJOPT_DESCRIPTION_PARAM =
     "trajopt_description"; /**< Default ROS parameter for trajopt description */
 
 static bool plotting_ = false;
-static bool write_to_file_ = false;
 static int steps_ = 5;
 static std::string method_ = "json";
 static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
@@ -75,9 +49,33 @@ TrajOptProbPtr jsonMethod()
 
   return ConstructProblem(root, env_);
 }
+void PrintHeader(std::ofstream &out) {
+  out << "Planning time (s), Trajectory length (rad), Trajectory length (m), "
+         "Smoothness, Average min distance from joint limit (normalised), "
+         "Success, Date\n";
+}
 
-int main(int argc, char** argv)
-{
+void PrintResult(double planning_time, double smoothness,
+                 bool success, std::ofstream &out) {
+  std::time_t t = std::time(nullptr);
+  std::tm tm = *std::localtime(&t);
+  char *fmt = "%y.%m.%d-%H:%M:%S";
+  out << planning_time << ", 0, 0," << smoothness << ", 0," << success << ", "
+      << std::put_time(&tm, fmt) << "\n";
+}
+
+int main(int argc, char* argv[]) {
+  std::cout << "Hello Tiago!" << std::endl;
+  std::ofstream out_file;
+  std::string filename = "/tmp/trajopr_results.csv";
+  out_file.open("/tmp/trajopr_results.csv", std::ofstream::out | std::ofstream::trunc);
+  if (out_file.is_open()){
+    PrintHeader(out_file);
+  } else {
+    std::cout << "Could not open output file" << std::endl;
+    return 0;
+  }
+
   ros::init(argc, argv, "glass_up_right_plan");
   ros::NodeHandle pnh("~");
   ros::NodeHandle nh;
@@ -136,7 +134,6 @@ int main(int argc, char** argv)
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
-  pnh.param("write_to_file", write_to_file_, write_to_file_);
   pnh.param<std::string>("method", method_, method_);
   pnh.param<int>("steps", steps_, steps_);
 
@@ -173,51 +170,44 @@ int main(int argc, char** argv)
 
   ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-  sco::BasicTrustRegionSQP opt(prob);
-  if (plotting_)
-  {
-    opt.addCallback(PlotCallback(*prob, plotter));
-  }
-
-  std::shared_ptr<std::ofstream> stream_ptr;
-  if (write_to_file_)
-  {
-    // Create file write callback discarding any of the file's current contents
-    stream_ptr.reset(new std::ofstream);
-    std::string path = ros::package::getPath("trajopt") + "/scripts/glass_up_right_plan.csv";
-    stream_ptr->open(path, std::ofstream::out | std::ofstream::trunc);
-    opt.addCallback(trajopt::WriteCallback(stream_ptr, prob));
-  }
-
-  opt.initialize(trajToDblVec(prob->GetInitTraj()));
-  ros::Time tStart = ros::Time::now();
-  opt.optimize();
-  ROS_ERROR("planning time: %.3f", (ros::Time::now() - tStart).toSec());
-
-  double d = 0;
-  TrajArray traj = getTraj(opt.x(), prob->GetVars());
-  for (unsigned i = 1; i < traj.rows(); ++i)
-  {
-    for (unsigned j = 0; j < traj.cols(); ++j)
+  size_t num_exp = 3;
+  for (size_t i = 0; i < num_exp; ++i) {
+    sco::BasicTrustRegionSQP opt(prob);
+    if (plotting_)
     {
-      d += std::abs(traj(i, j) - traj(i - 1, j));
+      opt.addCallback(PlotCallback(*prob, plotter));
     }
-  }
-  ROS_ERROR("trajectory norm: %.3f", d);
-  ROS_WARN_STREAM("Final trajectory: " << std::endl << traj);
 
-  if (plotting_)
-  {
-    plotter->clear();
-  }
-  if (write_to_file_)
-  {
-    stream_ptr->close();
-    ROS_INFO("Data written to file. Evaluate using scripts in trajopt/scripts.");
-  }
-  collisions.clear();
-  found = tesseract::continuousCollisionCheckTrajectory(
-      *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+    opt.initialize(trajToDblVec(prob->GetInitTraj()));
+    ros::Time tStart = ros::Time::now();
+    opt.optimize();
+    double duration = (ros::Time::now() - tStart).toSec();
+    ROS_ERROR("planning time: %.3f", duration);
 
-  ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+    double d = 0;
+    TrajArray traj = getTraj(opt.x(), prob->GetVars());
+    for (unsigned i = 1; i < traj.rows(); ++i)
+    {
+      for (unsigned j = 0; j < traj.cols(); ++j)
+      {
+        d += std::abs(traj(i, j) - traj(i - 1, j));
+      }
+    }
+    ROS_ERROR("trajectory norm: %.3f", d);
+    ROS_WARN_STREAM("Final trajectory: " << std::endl << traj);
+
+    if (plotting_)
+    {
+      plotter->clear();
+    }
+    collisions.clear();
+    found = tesseract::continuousCollisionCheckTrajectory(
+        *manager, *prob->GetEnv(), *prob->GetKin(), prob->GetInitTraj(), collisions);
+
+    ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
+    PrintResult(duration, 666, !found, out_file);
+  }
+
+  out_file.close();
+  return 0;
 }
