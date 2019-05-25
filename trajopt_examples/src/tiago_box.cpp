@@ -17,6 +17,8 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
 
+#include <numeric>
+
 using namespace trajopt;
 using namespace tesseract;
 
@@ -82,6 +84,33 @@ void PrintResult(double planning_time, double smoothness, bool success, std::ofs
     std::tm tm = *std::localtime(&t);
     char *fmt = "%y.%m.%d-%H:%M:%S";
     out << planning_time << ", 0, 0," << smoothness << ", 0," << success << ", " << std::put_time(&tm, fmt) << "\n";
+}
+
+double CalculateSmoothness(const std::vector<Eigen::Isometry3d> &cartesian_traj) {
+  double smoothness = 0.0;
+  Eigen::Isometry3d first_pose = cartesian_traj[0];
+
+  std::vector<double> pos_smoothness;
+
+  for(size_t i = 0; i < cartesian_traj.size() - 2; ++i) {
+    Eigen::Isometry3d pose0 = cartesian_traj[i];
+    Eigen::Isometry3d pose1 = cartesian_traj[i+1];
+    Eigen::Isometry3d pose2 = cartesian_traj[i+2];
+
+    Eigen::Vector3d f0 = (first_pose.translation() - pose0.translation());
+    f0.array() = f0.array().abs();
+    Eigen::Vector3d f1 = (first_pose.translation() - pose1.translation());
+    f1.array() = f1.array().abs();
+    Eigen::Vector3d f2 = (first_pose.translation() - pose2.translation());
+    f2.array() = f2.array().abs();
+    Eigen::Vector3d res = (f2 + f1 - 2.0 * f0);
+    res.array() = res.array().abs();
+    pos_smoothness.push_back(res.x());
+    pos_smoothness.push_back(res.y());
+    pos_smoothness.push_back(res.z());
+  }
+  smoothness = std::accumulate(pos_smoothness.begin(), pos_smoothness.end(), 0.0)/pos_smoothness.size();
+  return smoothness;
 }
 
 int main(int argc, char *argv[])
