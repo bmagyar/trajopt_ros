@@ -30,6 +30,28 @@ static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
 static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
 
+std::vector<Eigen::Isometry3d> jointToCartesianTrajectory(const tesseract_ros::KDLEnvPtr &external_env,
+                                                          const TrajArray &joint_traj)
+{
+    tesseract_ros::KDLEnv env = *external_env;
+    const auto &joint_names = env.getJointNames();
+    ROS_YELLOW_STREAM("Joint names: " << joint_names);
+
+    std::vector<Eigen::Isometry3d> result;
+    for (int i = 0; i < joint_traj.rows(); ++i)
+    {
+        const std::vector<double> joint_values = trajToDblVec(i, joint_traj);
+        env.setState(joint_names, joint_values);
+        const Eigen::Isometry3d tool_position = env.getLinkTransform("arm_tool_link");
+        result.push_back(tool_position);
+    }
+
+    ROS_GREEN_STREAM("Start state joint states " << trajToDblVec(0, joint_traj));
+    ROS_GREEN_STREAM("Start state FK is " << result[0].translation());
+    ROS_BLUE_STREAM("Goal state joint states " << trajToDblVec(joint_traj.rows() - 1, joint_traj));
+    ROS_BLUE_STREAM("Goal state FK is " << result[result.size() - 1].translation());
+}
+
 TrajOptProbPtr jsonMethod()
 {
     ros::NodeHandle nh;
@@ -196,13 +218,7 @@ int main(int argc, char *argv[])
         double duration = (ros::Time::now() - tStart).toSec();
         ROS_ERROR("planning time: %.3f", duration);
 
-        // const std::vector<double> &joint_values = traj[0];
-        // const auto &joint_names = env_->getJointNames();
-        // ROS_ERROR_STREAM("Joint names: " << joint_names);
-        // ROS_ERROR_STREAM("First state joint states " << joint_values);
-        // env_->setState(joint_names, joint_values);
-        // const Eigen::Isometry3d &tool_position = env_->getLinkTransform("arm_tool_link");
-        // ROS_ERROR_STREAM("Start state FK is " << tool_position.translation());
+        const auto cartesian_trajectory = jointToCartesianTrajectory(env_, traj);
 
         PrintResult(duration, 666, !found, out_file);
     }
