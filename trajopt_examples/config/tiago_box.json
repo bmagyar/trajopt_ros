@@ -20,23 +20,8 @@
       "params" :
       {
         "coeffs" : [20],
-        "dist_pen" : [0.025],
-        "continuous" : false,
-        "pairs" :
-        [
-          {
-             "link" : "base_link",
-             "pair" : ["link_5"],
-             "coeffs" : [10],
-             "dist_pen" : [0.05]
-          },
-          {
-             "link" : "link_3",
-             "pair" : ["link_5", "link_6"],
-             "coeffs" : [10],
-             "dist_pen" : [0.01]
-          }
-        ]
+        "dist_pen" : [0.5],
+        "continuous" : true
       }
     }
   ],
@@ -60,7 +45,7 @@
       "type" : "cart_pose",
       "params" :
       {
-        "timestep" : 4,
+        "timestep" : 19,
         "xyz" : [0.700, -0.445, 0.665],
         "wxyz" : [0.329, 0.867, -0.340, -0.158],
         "link" : "arm_tool_link",
