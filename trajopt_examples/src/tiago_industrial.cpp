@@ -11,8 +11,6 @@ TRAJOPT_IGNORE_WARNINGS_POP
 #include <tesseract_ros/kdl/kdl_env.h>
 #include <tesseract_ros/ros_basic_plotting.h>
 #include <trajopt_examples/rosconsole_extras.h>
-#include <trajopt/plot_callback.hpp>
-#include <trajopt/file_write_callback.hpp>
 #include <trajopt/problem_description.hpp>
 #include <trajopt_utils/config.hpp>
 #include <trajopt_utils/logging.hpp>
@@ -167,9 +165,6 @@ int main(int argc, char *argv[])
                                                       { 0.3, -0.5, 0.73 },  { 0.3, -0.59, 0.93 }, { 0.3, -0.79, 0.87 },
                                                       { 0.3, -0.7, 0.9 } };
 
-    // Create Plotting tool
-    tesseract_ros::ROSBasicPlottingPtr plotter(new tesseract_ros::ROSBasicPlotting(env_));
-
     // Add sphere
     AttachableObjectPtr obj(new AttachableObject());
 
@@ -209,16 +204,11 @@ int main(int argc, char *argv[])
         elem.second->collision.shapes[0]->print();
     }
 
-    plotter->plotScene();
-
     // Set Log Level
     util::gLogLevel = util::LevelInfo;
 
     // Setup Problem
     TrajOptProbPtr prob = jsonMethod();
-
-    // Solve Trajectory
-    ROS_INFO("glass upright plan example");
 
     std::vector<tesseract::ContactResultMap> collisions;
     ContinuousContactManagerBasePtr manager = prob->GetEnv()->getContinuousContactManager();
