@@ -84,7 +84,9 @@ void PrintResult(double planning_time, double smoothness, bool success, std::ofs
     std::time_t t = std::time(nullptr);
     std::tm tm = *std::localtime(&t);
     char *fmt = "%y.%m.%d-%H:%M:%S";
-    out << planning_time << ", 0, 0," << smoothness << ", 0," << success << ", " << std::put_time(&tm, fmt) << "\n";
+    const int success_flag = success ? 1 : 0;
+    out << planning_time << ", 0, 0," << smoothness << ", 0," << success_flag << ", " << std::put_time(&tm, fmt)
+        << "\n";
 }
 
 Eigen::Vector3d vAbs(const Eigen::Vector3d &v)
@@ -234,6 +236,7 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < num_exp; ++i)
     {
         sco::BasicTrustRegionSQP opt(prob);
+        opt.addCallback(PlotCallback(*prob, plotter));
 
         opt.initialize(trajToDblVec(prob->GetInitTraj()));
         ros::Time tStart = ros::Time::now();
@@ -257,13 +260,19 @@ int main(int argc, char *argv[])
 
         ROS_INFO((found) ? ("Final trajectory is in collision") : ("Final trajectory is collision free"));
 
+        const auto results = opt.results();
+        found = (results.status == sco::OPT_CONVERGED);
+        ROS_WHITE_STREAM(results);
+
         double duration = (ros::Time::now() - tStart).toSec();
         ROS_ERROR("planning time: %.3f", duration);
 
         const auto cartesian_trajectory = jointToCartesianTrajectory(env_, traj);
         const double cartesian_smoothness = calculateSmoothness(cartesian_trajectory);
 
-        PrintResult(duration, cartesian_smoothness, !found, out_file);
+        PrintResult(duration, cartesian_smoothness, found, out_file);
+
+        plotter->clear();
     }
 
     out_file.close();
