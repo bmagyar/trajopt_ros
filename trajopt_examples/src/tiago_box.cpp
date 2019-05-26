@@ -26,8 +26,6 @@ const std::string ROBOT_DESCRIPTION_PARAM = "robot_description";
 const std::string ROBOT_SEMANTIC_PARAM = "robot_description_semantic";
 const std::string TRAJOPT_DESCRIPTION_PARAM = "trajopt_description";
 
-static bool plotting_ = false;
-static int steps_ = 5;
 static urdf::ModelInterfaceSharedPtr urdf_model_; /**< URDF Model */
 static srdf::ModelSharedPtr srdf_model_;          /**< SRDF Model */
 static tesseract_ros::KDLEnvPtr env_;             /**< Trajopt Basic Environment */
@@ -36,7 +34,8 @@ std::vector<Eigen::Isometry3d> jointToCartesianTrajectory(const tesseract_ros::K
                                                           const TrajArray &joint_traj)
 {
     tesseract_ros::KDLEnv env = *external_env;
-    const auto &joint_names = env.getJointNames();
+    const std::vector<std::string> joint_names = { "arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint",
+                                                   "arm_5_joint", "arm_6_joint", "arm_7_joint", "torso_lift_joint" };
     ROS_YELLOW_STREAM("Joint names: " << joint_names);
 
     std::vector<Eigen::Isometry3d> result;
@@ -72,6 +71,7 @@ TrajOptProbPtr jsonMethod()
 
     return ConstructProblem(root, env_);
 }
+
 void PrintHeader(std::ofstream &out)
 {
     out << "Planning time (s), Trajectory length (rad), Trajectory length (m), "
@@ -123,8 +123,8 @@ int main(int argc, char *argv[])
 {
     std::cout << "Hello Tiago!" << std::endl;
     std::ofstream out_file;
-    std::string filename = "/tmp/trajopr_results.csv";
-    out_file.open("/tmp/trajopr_results.csv", std::ofstream::out | std::ofstream::trunc);
+    const std::string filename = "/tmp/box_trajopt_arm_torso.csv";
+    out_file.open(filename, std::ofstream::out | std::ofstream::trunc);
     if (out_file.is_open())
     {
         PrintHeader(out_file);
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     attached_body.object_name = "sphere_attached";
     attached_body.parent_link_name = "base_link";
     attached_body.transform.setIdentity();
-    //  attached_body.touch_links = {}; // This element enables the attached body
+    // attached_body.touch_links = {};  // This element enables the attached body
     //  to collide with other links
 
     env_->attachBody(attached_body);
@@ -190,9 +190,6 @@ int main(int argc, char *argv[])
         std::cout << "***   " << elem.first << std::endl;
         elem.second->collision.shapes[0]->print();
     }
-
-    // Get ROS Parameters
-    pnh.param<int>("steps", steps_, steps_);
 
     plotter->plotScene();
 
@@ -219,10 +216,6 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < num_exp; ++i)
     {
         sco::BasicTrustRegionSQP opt(prob);
-        if (plotting_)
-        {
-            opt.addCallback(PlotCallback(*prob, plotter));
-        }
 
         opt.initialize(trajToDblVec(prob->GetInitTraj()));
         ros::Time tStart = ros::Time::now();
@@ -240,10 +233,6 @@ int main(int argc, char *argv[])
         ROS_ERROR("trajectory norm: %.3f", d);
         ROS_WARN_STREAM("Final trajectory: " << std::endl << traj);
 
-        if (plotting_)
-        {
-            plotter->clear();
-        }
         collisions.clear();
         found = tesseract::continuousCollisionCheckTrajectory(*manager, *prob->GetEnv(), *prob->GetKin(),
                                                               prob->GetInitTraj(), collisions);
