@@ -3,7 +3,7 @@
   {
     "n_steps" : 20,
     "manip" : "arm_torso",
-    "start_fixed" : true
+    "start_fixed" : false
   },
   "costs" :
   [

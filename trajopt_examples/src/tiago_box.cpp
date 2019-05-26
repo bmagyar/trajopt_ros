@@ -162,7 +162,6 @@ int main(int argc, char *argv[])
     // Add sphere
     AttachableObjectPtr obj(new AttachableObject());
     std::shared_ptr<shapes::Shape> collision_object(new shapes::Box(0.2, 0.2, 0.3));
-    // std::shared_ptr<shapes::Shape> collision_object(new shapes::Sphere(0.15));
     Eigen::Isometry3d coll_object_pose;
 
     coll_object_pose.setIdentity();
@@ -214,10 +213,11 @@ int main(int argc, char *argv[])
 
     ROS_INFO((found) ? ("Initial trajectory is in collision") : ("Initial trajectory is collision free"));
 
-    const size_t num_exp = 3;
+    const size_t num_exp = 20;
     for (size_t i = 0; i < num_exp; ++i)
     {
         sco::BasicTrustRegionSQP opt(prob);
+        opt.addCallback(PlotCallback(*prob, plotter));
 
         opt.initialize(trajToDblVec(prob->GetInitTraj()));
         ros::Time tStart = ros::Time::now();
@@ -252,6 +252,8 @@ int main(int argc, char *argv[])
         const double cartesian_smoothness = calculateSmoothness(cartesian_trajectory);
 
         PrintResult(duration, cartesian_smoothness, found, out_file);
+
+        plotter->clear();
     }
 
     out_file.close();
