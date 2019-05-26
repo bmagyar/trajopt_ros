@@ -180,18 +180,19 @@ int main(int argc, char** argv)
 
   // Add sphere
   AttachableObjectPtr obj(new AttachableObject());
-  std::shared_ptr<shapes::Shape> collision_object(new shapes::Box(0.2, 0.2, 0.3));
-  // std::shared_ptr<shapes::Shape> collision_object(new shapes::Sphere(0.15));
-  Eigen::Isometry3d coll_object_pose;
+  std::shared_ptr<shapes::Sphere> sphere(new shapes::Sphere());
+  Eigen::Isometry3d sphere_pose;
 
-  coll_object_pose.setIdentity();
-  coll_object_pose.translation() = Eigen::Vector3d(0.5, 0, 0.55);
+  sphere->radius = 0.15;
+
+  sphere_pose.setIdentity();
+  sphere_pose.translation() = Eigen::Vector3d(0.5, 0, 0.55);
 
   obj->name = "sphere_attached";
-  obj->visual.shapes.push_back(collision_object);
-  obj->visual.shape_poses.push_back(coll_object_pose);
-  obj->collision.shapes.push_back(collision_object);
-  obj->collision.shape_poses.push_back(coll_object_pose);
+  obj->visual.shapes.push_back(sphere);
+  obj->visual.shape_poses.push_back(sphere_pose);
+  obj->collision.shapes.push_back(sphere);
+  obj->collision.shape_poses.push_back(sphere_pose);
   obj->collision.collision_object_types.push_back(CollisionObjectType::UseShapeType);
 
   env_->addAttachableObject(obj);
@@ -204,13 +205,6 @@ int main(int argc, char** argv)
   //  to collide with other links
 
   env_->attachBody(attached_body);
-
-  const auto environment_objects = env_->getAttachableObjects();
-  for( const auto& elem : environment_objects)
-  {
-    std::cout << "***   " << elem.first << std::endl;
-    elem.second->collision.shapes[0]->print();
-  }
 
   // Get ROS Parameters
   pnh.param("plotting", plotting_, plotting_);
